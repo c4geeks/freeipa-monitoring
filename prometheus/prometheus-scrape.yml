@@ -1,0 +1,35 @@
+# Prometheus scrape config for the FreeIPA monitoring pipeline.
+# Drop the scrape_configs block into your /etc/prometheus/prometheus.yml.
+# Full walkthrough: https://computingforgeeks.com/freeipa-healthcheck-prometheus-grafana/
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - "ipa-alerts.yml"
+
+# --- Single IPA server ---
+scrape_configs:
+  - job_name: 'ipa-server'
+    static_configs:
+      - targets: ['ipa.example.com:9100']
+        labels:
+          role: 'ipa-primary'
+          realm: 'EXAMPLE.COM'
+
+# --- Multiple replicas: replace the block above with this ---
+# scrape_configs:
+#   - job_name: 'ipa-realm'
+#     static_configs:
+#       - targets:
+#           - 'ipa01.example.com:9100'
+#           - 'ipa02.example.com:9100'
+#           - 'ipa03.example.com:9100'
+#         labels:
+#           realm: 'EXAMPLE.COM'
+#     relabel_configs:
+#       - source_labels: [__address__]
+#         regex: '([^.]+).*'
+#         target_label: replica
+#         replacement: '${1}'

@@ -1,0 +1,62 @@
+groups:
+  - name: ipa-healthcheck
+    interval: 30s
+    rules:
+      # --- Core five: the signals that correlate with an outage ---
+      - alert: IPAHealthcheckFailure
+        expr: max(ipa_healthcheck{result="ERROR"}) > 0
+          or max(ipa_healthcheck{result="CRITICAL"}) > 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "ipa-healthcheck reporting ERROR or CRITICAL"
+
+      - alert: IPAHealthcheckWarning
+        expr: max(ipa_healthcheck{result="WARNING"}) > 0
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "ipa-healthcheck reporting WARNINGs"
+
+      - alert: IPAServiceDown
+        expr: ipa_service_state == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "IPA service {{ $labels.service }} is DOWN"
+
+      - alert: IPACertificateExpiringSoon
+        expr: min(ipa_certificate_days_until_expiry) < 30
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "IPA cert {{ $labels.cert }} expires in <30 days"
+
+      - alert: IPAHealthcheckStale
+        expr: time() - ipa_healthcheck_last_run_timestamp_seconds > 900
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "ipa-healthcheck has not run in 15+ minutes"
+
+      # --- Optional extras: enable once you run replicas ---
+      - alert: IPAReplicationCheckFailing
+        expr: ipa_healthcheck_result{source="ipahealthcheck.ipa.replication"} >= 2
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "Replication check {{ $labels.check }} reporting ERROR/CRITICAL"
+
+      - alert: IPACertmongerStuck
+        expr: ipa_healthcheck_result{check="CertmongerStuckCheck"} >= 2
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "certmonger has a stuck cert request on {{ $labels.instance }}"
+
+      - alert: IPADNSCheckFailing
+        expr: ipa_healthcheck_result{source="ipahealthcheck.ipa.idns"} >= 2
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "IPA DNS forwarder or delegation check failing"

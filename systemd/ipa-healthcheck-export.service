@@ -1,0 +1,8 @@
+[Unit]
+Description=Export ipa-healthcheck results as Prometheus textfile
+After=ipa.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ipa-healthcheck-export.sh
+User=root
